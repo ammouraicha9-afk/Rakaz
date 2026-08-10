@@ -22,18 +22,18 @@
     body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
     
     /* Sidebar */
-    .sidebar { width: 310px; background: var(--sidebar-bg); color: white; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
-    .sidebar h1 { font-size: 1.5rem; text-align: center; color: #38bdf8; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .sidebar { width: 310px; background: var(--sidebar-bg); color: white; padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+    .sidebar h1 { font-size: 1.5rem; text-align: center; color: #38bdf8; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .sidebar h1 img { width: 32px; height: 32px; border-radius: 50%; }
     .nav-btn { background: #334155; color: white; border: none; padding: 10px 14px; border-radius: 8px; text-align: left; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; transition: background 0.2s; }
     .nav-btn:hover { background: #475569; }
-    .folder-tree { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-    .ue-header { font-weight: bold; padding: 6px 0; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
+    .folder-tree { margin-top: 5px; display: flex; flex-direction: column; gap: 8px; }
+    .ue-header { font-weight: bold; padding: 6px 0; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; border-bottom: 1px solid #334155; margin-bottom: 4px; }
     
-    .folder-item { font-size: 0.9rem; padding: 6px 10px; cursor: pointer; border-radius: 6px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; background: #2d3748; margin-bottom: 4px; }
+    .folder-item { font-size: 0.88rem; padding: 6px 10px; cursor: pointer; border-radius: 6px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; background: #2d3748; margin-bottom: 3px; }
     .folder-item:hover { background: #334155; color: white; }
-    .folder-actions { display: flex; gap: 4px; }
-    .action-icon { background: none; border: none; cursor: pointer; font-size: 0.85rem; padding: 2px 4px; border-radius: 4px; color: #cbd5e1; }
+    .folder-actions { display: flex; gap: 2px; }
+    .action-icon { background: none; border: none; cursor: pointer; font-size: 0.8rem; padding: 2px 4px; border-radius: 4px; color: #cbd5e1; }
     .action-icon:hover { background: #475569; color: white; }
 
     /* Main Area */
@@ -68,7 +68,7 @@
 
     /* Modal */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
-    .modal-card { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 15px; }
+    .modal-card { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto; }
     .modal-card input, .modal-card textarea, .modal-card select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; }
     .modal-card textarea { height: 80px; resize: vertical; }
   </style>
@@ -93,8 +93,10 @@
     <div class="sidebar">
       <h1><img src="rakaz-icone.png" alt="Icone"> Rakaz</h1>
       <button class="nav-btn" onclick="showDashboard()">🏠 Vue d'ensemble</button>
+      <button class="nav-btn" style="background:#0284c7;" onclick="openExamModal()">📝 Mode Examen</button>
+      <button class="nav-btn" style="background:#475569;" onclick="showTrashView()">🗑️ Corbeille</button>
       
-      <div style="margin-top: 15px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: bold;">Mes Cours (Dossiers)</div>
+      <div style="margin-top: 10px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: bold;">Mes Cours (Dossiers)</div>
       <div class="folder-tree" id="folderTree"></div>
 
       <button class="btn-action" style="background:#ef4444; margin-top:auto;" onclick="handleLogout()">Déconnexion</button>
@@ -104,7 +106,7 @@
       <div class="top-bar">
         <h2 id="mainTitle">Tableau de bord</h2>
         <div style="display:flex; gap:10px;">
-          <button class="btn-action" style="background:#0284c7;" onclick="importUE4Cards()">📥 Importer UE4</button>
+          <button id="importUe4Btn" class="btn-action" style="background:#0284c7; display:none;" onclick="importUE4Cards()">📥 Importer UE4</button>
           <button class="btn-action" onclick="openNewCardModal()">+ Nouvelle Carte</button>
         </div>
       </div>
@@ -131,7 +133,7 @@
         <div class="dashboard" id="dashboardGrid"></div>
       </div>
 
-      <!-- PRACTICE VIEW AVEC CORBEILLE DE CARTE -->
+      <!-- PRACTICE VIEW -->
       <div id="practiceView" style="display:none; text-align:center;">
         <div style="display:flex; justify-content:space-between; align-items:center; max-width:560px; margin:0 auto;">
           <span id="cardProgress" style="font-size:0.9rem; color:#64748b; font-weight:600;">Carte 1 / 5</span>
@@ -151,10 +153,17 @@
           <button class="btn-rate" style="background:var(--easy);" onclick="rateCard(2)">Acquis !</button>
         </div>
       </div>
+
+      <!-- TRASH VIEW -->
+      <div id="trashView" style="display:none;">
+        <h3 style="margin-bottom:15px; color:#ef4444;">Corbeille (Éléments supprimés)</h3>
+        <p style="font-size:0.9rem; color:#64748b; margin-bottom:20px;">Tu peux restaurer tes cartes ou les supprimer définitivement ici.</p>
+        <div id="trashList" style="display:flex; flex-direction:column; gap:10px; max-width:800px;"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Modal Nouvelle Carte avec Menus Déroulants -->
+  <!-- Modal Nouvelle Carte -->
   <div class="modal-overlay" id="createModal">
     <div class="modal-card">
       <h3>Ajouter une nouvelle carte</h3>
@@ -177,6 +186,21 @@
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
         <button class="btn-action" style="background:#64748b;" onclick="closeModal('createModal')">Annuler</button>
         <button class="btn-action" onclick="saveNewCard()">Créer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Mode Examen -->
+  <div class="modal-overlay" id="examModal">
+    <div class="modal-card">
+      <h3>📝 Lancer un Examen Personnalisé</h3>
+      <p style="font-size:0.85rem; color:#64748b;">Sélectionne les chapitres à inclure dans ton examen :</p>
+      
+      <div id="examChaptersList" style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto; border:1px solid #e2e8f0; padding:10px; border-radius:8px;"></div>
+      
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+        <button class="btn-action" style="background:#64748b;" onclick="closeModal('examModal')">Annuler</button>
+        <button class="btn-action" style="background:#0284c7;" onclick="startExamSession()">Lancer l'examen</button>
       </div>
     </div>
   </div>
@@ -259,6 +283,11 @@
         return;
       }
       cardsData = data || [];
+      
+      // Afficher ou cacher le bouton d'importation UE4 s'il existe déjà
+      const hasUE4 = cardsData.some(c => c.ue === 'UE4' && c.status !== -1);
+      document.getElementById('importUe4Btn').style.display = hasUE4 ? 'none' : 'inline-flex';
+
       renderSidebar();
       renderDashboard();
     }
@@ -266,7 +295,7 @@
     async function importUE4Cards() {
       const { data: { user }, error: userError } = await dbClient.auth.getUser();
       if (userError || !user) {
-        alert("Session introuvable. Veuillez vous re-connecter.");
+        alert("Session introuvable.");
         return;
       }
       currentUser = user;
@@ -282,9 +311,9 @@
 
       const { error } = await dbClient.from('flashcards').insert(payload);
       if (error) {
-        alert("Erreur d'importation : " + error.message);
+        alert("Erreur : " + error.message);
       } else {
-        alert("Cartes UE4 importées avec succès !");
+        alert("Cartes UE4 importées !");
         await loadCards();
       }
     }
@@ -298,10 +327,7 @@
           alert("Indiquez un nom de chapitre et collez le texte !");
           return;
       }
-      if (!currentUser) {
-          alert("Connectez-vous !");
-          return;
-      }
+      if (!currentUser) return;
 
       const lignes = texteBrut.split('\n');
       let cartesACreer = [];
@@ -326,7 +352,7 @@
       }
 
       if (cartesACreer.length === 0) {
-          alert("Aucune carte trouvée. Vérifiez le format (Question : / Réponse :).");
+          alert("Aucune carte trouvée. Format requis : 'Question :' et 'Réponse :'");
           return;
       }
 
@@ -334,45 +360,82 @@
       if (error) {
           alert("Erreur : " + error.message);
       } else {
-          alert("🎉 Succès ! " + cartesACreer.length + " cartes créées.");
+          alert("🎉 " + cartesACreer.length + " cartes créées avec succès !");
           document.getElementById('import-texte').value = ""; 
           document.getElementById('import-chapter').value = ""; 
           await loadCards(); 
       }
     }
 
-    // GESTION DES DOSSIERS : RENOMMER, SUPPRIMER, DÉPLACER
+    // GESTION CORBEILLE (SOFT DELETE)
     async function deleteFolder(chap) {
-      if(confirm(`Supprimer tout le dossier "${chap}" et ses cartes ?`)) {
-        const { error } = await dbClient.from('flashcards').delete().eq('chapter', chap);
-        if(error) alert("Erreur : " + error.message);
-        else await loadCards();
+      if(confirm(`Mettre le dossier "${chap}" à la corbeille ?`)) {
+        const activeCards = cardsData.filter(c => c.chapter === chap && c.status !== -1);
+        for(let card of activeCards) {
+          await dbClient.from('flashcards').update({ status: -1 }).eq('id', card.id);
+        }
+        await loadCards();
+      }
+    }
+
+    async function deleteCurrentCard() {
+      if(currentFiltered.length === 0) return;
+      const card = currentFiltered[cardIdx];
+      await dbClient.from('flashcards').update({ status: -1 }).eq('id', card.id);
+      await loadCards();
+      currentFiltered = cardsData.filter(c => c.chapter === card.chapter && c.status !== -1);
+      showCard();
+    }
+
+    async function restoreCard(id) {
+      await dbClient.from('flashcards').update({ status: 0 }).eq('id', id);
+      await loadCards();
+      showTrashView();
+    }
+
+    async function permanentDelete(id) {
+      if(confirm("Supprimer définitivement cette carte ?")) {
+        await dbClient.from('flashcards').delete().eq('id', id);
+        await loadCards();
+        showTrashView();
       }
     }
 
     async function renameFolder(oldChap) {
       const newChap = prompt(`Renommer le dossier "${oldChap}" par :`, oldChap);
       if (newChap && newChap.trim() !== "" && newChap !== oldChap) {
-        const { error } = await dbClient.from('flashcards').update({ chapter: newChap.trim() }).eq('chapter', oldChap);
-        if(error) alert("Erreur : " + error.message);
-        else await loadCards();
+        const activeInChap = cardsData.filter(c => c.chapter === oldChap && c.status !== -1);
+        for(let card of activeInChap) {
+          await dbClient.from('flashcards').update({ chapter: newChap.trim() }).eq('id', card.id);
+        }
+        await loadCards();
+      }
+    }
+
+    async function renameUe(oldUe) {
+      const newUe = prompt(`Renommer l'UE "${oldUe}" par :`, oldUe);
+      if (newUe && newUe.trim() !== "" && newUe !== oldUe) {
+        const activeInUe = cardsData.filter(c => (c.ue || 'Général') === oldUe && c.status !== -1);
+        for(let card of activeInUe) {
+          await dbClient.from('flashcards').update({ ue: newUe.trim() }).eq('id', card.id);
+        }
+        await loadCards();
       }
     }
 
     function moveFolder(chap, direction) {
-      let chapters = [...new Set(cardsData.map(c => c.chapter))];
-      let index = chapters.indexOf(chap);
+      let activeChapters = [...new Set(cardsData.filter(c => c.status !== -1).map(c => c.chapter))];
+      let index = activeChapters.indexOf(chap);
       if (index === -1) return;
       
       let targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= chapters.length) return; // Limites
+      if (targetIndex < 0 || targetIndex >= activeChapters.length) return;
 
-      // On échange l'ordre visuel en sauvegardant dans le stockage local du navigateur
-      let temp = chapters[index];
-      chapters[index] = chapters[targetIndex];
-      chapters[targetIndex] = temp;
+      let temp = activeChapters[index];
+      activeChapters[index] = activeChapters[targetIndex];
+      activeChapters[targetIndex] = temp;
       
-      localStorage.setItem('rakaz_chapters_order', JSON.stringify(chapters));
+      localStorage.setItem('rakaz_chapters_order', JSON.stringify(activeChapters));
       renderSidebar();
       renderDashboard();
     }
@@ -381,8 +444,9 @@
       const folderTree = document.getElementById('folderTree');
       folderTree.innerHTML = '';
 
-      let chapters = [...new Set(cardsData.map(c => c.chapter))];
-      // Appliquer l'ordre personnalisé s'il existe
+      const activeCards = cardsData.filter(c => c.status !== -1);
+      let chapters = [...new Set(activeCards.map(c => c.chapter))];
+      
       const savedOrder = JSON.parse(localStorage.getItem('rakaz_chapters_order'));
       if (savedOrder) {
         chapters.sort((a, b) => {
@@ -394,19 +458,23 @@
         });
       }
 
-      const ues = [...new Set(cardsData.map(c => c.ue || 'Général'))];
+      const ues = [...new Set(activeCards.map(c => c.ue || 'Général'))];
       ues.forEach(ue => {
+        const safeUe = ue.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         const ueDiv = document.createElement('div');
-        ueDiv.innerHTML = `<div class="ue-header">📁 ${ue}</div>`;
+        ueDiv.innerHTML = `
+          <div class="ue-header">
+            <span>📁 ${ue}</span>
+            <button class="action-icon" title="Renommer l'UE" onclick="renameUe('${safeUe}')">✏️</button>
+          </div>`;
         
         const chapDiv = document.createElement('div');
         const chapInUe = chapters.filter(chap => {
-          const sample = cardsData.find(c => c.chapter === chap);
+          const sample = activeCards.find(c => c.chapter === chap);
           return sample && (sample.ue || 'Général') === ue;
         });
 
         chapInUe.forEach(chap => {
-          // Sécurisation des guillemets pour éviter tout bug d'apostrophe
           const safeChap = chap.replace(/'/g, "\\'").replace(/"/g, '&quot;');
           chapDiv.innerHTML += `
             <div class="folder-item">
@@ -415,7 +483,7 @@
                 <button class="action-icon" title="Monter" onclick="moveFolder('${safeChap}', -1)">⬆️</button>
                 <button class="action-icon" title="Descendre" onclick="moveFolder('${safeChap}', 1)">⬇️</button>
                 <button class="action-icon" title="Renommer" onclick="renameFolder('${safeChap}')">✏️</button>
-                <button class="action-icon" title="Supprimer" onclick="deleteFolder('${safeChap}')">🗑️</button>
+                <button class="action-icon" title="Mettre à la corbeille" onclick="deleteFolder('${safeChap}')">🗑️</button>
               </div>
             </div>
           `;
@@ -430,11 +498,13 @@
       document.getElementById('mainTitle').innerText = "Tableau de bord — Mes Dossiers";
       document.getElementById('dashboardView').style.display = 'block';
       document.getElementById('practiceView').style.display = 'none';
+      document.getElementById('trashView').style.display = 'none';
 
       const grid = document.getElementById('dashboardGrid');
       grid.innerHTML = '';
       
-      let chapters = [...new Set(cardsData.map(c => c.chapter))];
+      const activeCards = cardsData.filter(c => c.status !== -1);
+      let chapters = [...new Set(activeCards.map(c => c.chapter))];
       const savedOrder = JSON.parse(localStorage.getItem('rakaz_chapters_order'));
       if (savedOrder) {
         chapters.sort((a, b) => {
@@ -447,12 +517,12 @@
       }
       
       if (chapters.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:#64748b;">Aucun cours trouvé. Cliquez sur **"📥 Importer UE4"** ci-dessus !</p>`;
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:#64748b;">Aucun cours actif. Utilisez l'importation rapide ou l'UE4 !</p>`;
         return;
       }
 
       chapters.forEach(chap => {
-        const chapCards = cardsData.filter(c => c.chapter === chap);
+        const chapCards = activeCards.filter(c => c.chapter === chap);
         const acquired = chapCards.filter(c => c.status === 2).length;
         const percent = chapCards.length ? Math.round((acquired/chapCards.length)*100) : 0;
         const color = percent < 40 ? "var(--hard)" : percent < 80 ? "var(--medium)" : "var(--easy)";
@@ -478,11 +548,12 @@
     function showDashboard() { renderDashboard(); }
 
     function startPractice(chap) {
-      currentFiltered = cardsData.filter(c => c.chapter === chap);
+      currentFiltered = cardsData.filter(c => c.chapter === chap && c.status !== -1);
       cardIdx = 0;
       document.getElementById('mainTitle').innerText = chap;
       document.getElementById('dashboardView').style.display = 'none';
       document.getElementById('practiceView').style.display = 'block';
+      document.getElementById('trashView').style.display = 'none';
       showCard();
     }
 
@@ -508,23 +579,86 @@
       showCard();
     }
 
-    async function deleteCurrentCard() {
-      if(confirm("Supprimer cette carte ?")) {
-        const card = currentFiltered[cardIdx];
-        await dbClient.from('flashcards').delete().eq('id', card.id);
-        await loadCards();
-        // Mettre à jour currentFiltered pour la révision en cours
-        currentFiltered = cardsData.filter(c => c.chapter === card.chapter);
-        showCard();
+    // MODE EXAMEN (Multi-chapitres)
+    function openExamModal() {
+      const activeCards = cardsData.filter(c => c.status !== -1);
+      const chapters = [...new Set(activeCards.map(c => c.chapter))];
+      const listDiv = document.getElementById('examChaptersList');
+      
+      if (chapters.length === 0) {
+        alert("Aucun cours disponible pour un examen !");
+        return;
       }
+
+      listDiv.innerHTML = chapters.map(chap => `
+        <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; cursor:pointer;">
+          <input type="checkbox" value="${chap}" checked style="width:auto;"> ${chap}
+        </label>
+      `).join('');
+
+      document.getElementById('examModal').style.display = 'flex';
     }
 
-    // MODAL DE CRÉATION AVEC MENUS DÉROULANTS
+    function startExamSession() {
+      const checkboxes = document.querySelectorAll('#examChaptersList input[type="checkbox"]:checked');
+      const selectedChapters = Array.from(checkboxes).map(cb => cb.value);
+
+      if (selectedChapters.length === 0) {
+        alert("Sélectionne au moins un chapitre !");
+        return;
+      }
+
+      currentFiltered = cardsData.filter(c => selectedChapters.includes(c.chapter) && c.status !== -1);
+      // Mélanger les cartes pour l'examen
+      currentFiltered.sort(() => Math.random() - 0.5);
+
+      if (currentFiltered.length === 0) {
+        alert("Aucune carte dans les chapitres sélectionnés.");
+        return;
+      }
+
+      closeModal('examModal');
+      cardIdx = 0;
+      document.getElementById('mainTitle').innerText = "📝 Examen Personnalisé";
+      document.getElementById('dashboardView').style.display = 'none';
+      document.getElementById('practiceView').style.display = 'block';
+      document.getElementById('trashView').style.display = 'none';
+      showCard();
+    }
+
+    // VUE CORBEILLE
+    function showTrashView() {
+      document.getElementById('mainTitle').innerText = "Corbeille";
+      document.getElementById('dashboardView').style.display = 'none';
+      document.getElementById('practiceView').style.display = 'none';
+      document.getElementById('trashView').style.display = 'block';
+
+      const trashList = document.getElementById('trashList');
+      const deletedCards = cardsData.filter(c => c.status === -1);
+
+      if (deletedCards.length === 0) {
+        trashList.innerHTML = `<p style="color:#64748b;">La corbeille est vide.</p>`;
+        return;
+      }
+
+      trashList.innerHTML = deletedCards.map(c => `
+        <div style="background:white; padding:15px; border-radius:10px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+          <div>
+            <span style="font-size:0.8rem; background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${c.chapter}</span>
+            <p style="margin-top:6px; font-weight:600; font-size:0.95rem;">${c.question}</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-shrink:0;">
+            <button class="btn-action" style="background:#22c55e; padding:6px 12px; font-size:0.85rem;" onclick="restoreCard('${c.id}')">Restaurer</button>
+            <button class="btn-action" style="background:#ef4444; padding:6px 12px; font-size:0.85rem;" onclick="permanentDelete('${c.id}')">Supprimer</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // MODAL CRÉATION
     function openNewCardModal() {
       document.getElementById('createModal').style.display = 'flex';
-      
-      // Remplir le menu UE
-      const ues = [...new Set(cardsData.map(c => c.ue || 'Général'))];
+      const ues = [...new Set(cardsData.filter(c => c.status !== -1).map(c => c.ue || 'Général'))];
       const ueSelect = document.getElementById('modalUeSelect');
       ueSelect.innerHTML = ues.map(u => `<option value="${u}">${u}</option>`).join('') + `<option value="new">➕ Créer une nouvelle UE...</option>`;
       handleUeChange();
@@ -533,17 +667,10 @@
     function handleUeChange() {
       const ueSelect = document.getElementById('modalUeSelect');
       const ueInput = document.getElementById('modalUeInput');
-      
-      if (ueSelect.value === 'new') {
-        ueInput.style.display = 'block';
-        ueInput.value = '';
-      } else {
-        ueInput.style.display = 'none';
-      }
+      ueInput.style.display = ueSelect.value === 'new' ? 'block' : 'none';
 
-      // Mettre à jour les chapitres de cette UE
       const selectedUe = ueSelect.value === 'new' ? '' : ueSelect.value;
-      const chapters = [...new Set(cardsData.filter(c => (c.ue || 'Général') === selectedUe).map(c => c.chapter))];
+      const chapters = [...new Set(cardsData.filter(c => c.status !== -1 && (c.ue || 'Général') === selectedUe).map(c => c.chapter))];
       const chapSelect = document.getElementById('modalChapSelect');
       
       chapSelect.innerHTML = chapters.map(c => `<option value="${c}">${c}</option>`).join('') + `<option value="new">➕ Créer un nouveau chapitre...</option>`;
@@ -553,12 +680,7 @@
     function handleChapChange() {
       const chapSelect = document.getElementById('modalChapSelect');
       const chapInput = document.getElementById('modalChapInput');
-      if (chapSelect.value === 'new') {
-        chapInput.style.display = 'block';
-        chapInput.value = '';
-      } else {
-        chapInput.style.display = 'none';
-      }
+      chapInput.style.display = chapSelect.value === 'new' ? 'block' : 'none';
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
