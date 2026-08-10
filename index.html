@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rakaz</title>
-  <!-- Ligne ajoutée pour l'icône : remplace image_5.png si nécessaire -->
   <link rel="icon" type="image/png" href="image_5.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -80,13 +79,19 @@
   </div>
 
   <script>
-    const SUPABASE_URL = localStorage.getItem('sp_url') || prompt("Entrez votre Project URL Supabase (ex: https://xxx.supabase.co) :");
-    const SUPABASE_KEY = localStorage.getItem('sp_key') || prompt("Entrez votre Publishable API Key :");
+    let url = localStorage.getItem('sp_url');
+    let key = localStorage.getItem('sp_key');
 
-    if(SUPABASE_URL) localStorage.setItem('sp_url', SUPABASE_URL.replace('/v1',''));
-    if(SUPABASE_KEY) localStorage.setItem('sp_key', SUPABASE_KEY);
+    if (!url) {
+      url = prompt("Entrez votre Project URL Supabase (ex: https://xxx.supabase.co) :");
+      if (url) localStorage.setItem('sp_url', url.replace('/v1',''));
+    }
+    if (!key) {
+      key = prompt("Entrez votre Publishable API Key :");
+      if (key) localStorage.setItem('sp_key', key);
+    }
 
-    const supabase = window.supabase.createClient(localStorage.getItem('sp_url'), localStorage.getItem('sp_key'));
+    const dbClient = window.supabase ? window.supabase.createClient(url, key) : null;
 
     let currentUser = null;
     let cardsData = [];
@@ -94,7 +99,8 @@
     let cardIdx = 0;
 
     async function checkUser() {
-      const { data: { user } } = await supabase.auth.getUser();
+      if(!dbClient) return;
+      const { data: { user } } = await dbClient.auth.getUser();
       if(user) {
         currentUser = user;
         document.getElementById('authView').style.display = 'none';
@@ -104,28 +110,30 @@
     }
 
     async function handleLogin() {
+      if(!dbClient) return alert("Configuration Supabase manquante.");
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await dbClient.auth.signInWithPassword({ email, password });
       if(error) document.getElementById('authError').innerText = error.message;
       else checkUser();
     }
 
     async function handleSignUp() {
+      if(!dbClient) return alert("Configuration Supabase manquante.");
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await dbClient.auth.signUp({ email, password });
       if(error) document.getElementById('authError').innerText = error.message;
       else alert("Compte créé ! Vous pouvez vous connecter.");
     }
 
     async function handleLogout() {
-      await supabase.auth.signOut();
+      if(dbClient) await dbClient.auth.signOut();
       location.reload();
     }
 
     async function loadCards() {
-      const { data, error } = await supabase.from('flashcards').select('*');
+      const { data, error } = await dbClient.from('flashcards').select('*');
       if(!error) { cardsData = data; renderDashboard(); }
     }
 
@@ -175,7 +183,7 @@
     async function rateCard(status) {
       const card = currentFiltered[cardIdx];
       card.status = status;
-      await supabase.from('flashcards').update({ status }).eq('id', card.id);
+      await dbClient.from('flashcards').update({ status }).eq('id', card.id);
       cardIdx = (cardIdx + 1) % currentFiltered.length;
       showCard();
     }
@@ -186,7 +194,7 @@
       const question = prompt("Question (Recto) :");
       const answer = prompt("Réponse (Verso) :");
       if(ue && chapter && question && answer) {
-        await supabase.from('flashcards').insert([{ user_id: currentUser.id, ue, chapter, question, answer }]);
+        await dbClient.from('flashcards').insert([{ user_id: currentUser.id, ue, chapter, question, answer }]);
         loadCards();
       }
     }
