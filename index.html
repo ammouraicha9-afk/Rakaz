@@ -106,6 +106,25 @@
       </div>
 
       <div id="dashboardView">
+        
+        <!-- NOUVELLE ZONE : IMPORTATION RAPIDE -->
+        <div style="margin-bottom: 30px; padding: 25px; background-color: white; border-radius: 14px; border: 2px dashed #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 1.2rem;">🚀 Création Rapide (Copier-Coller l'IA)</h3>
+            <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 15px;">Collez ici les questions générées par l'IA. (Format exact: "Question : ..." puis "Réponse : ...")</p>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="import-ue" placeholder="UE (ex: UE4)" style="flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;">
+                <input type="text" id="import-chapter" placeholder="Nom du chapitre (ex: Embryologie - Semaine 1)" style="flex: 2; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;">
+            </div>
+
+            <textarea id="import-texte" rows="6" placeholder="Question : Quelles sont les dates...&#10;Réponse : De la fécondation...&#10;&#10;Question : Quel est le rôle...&#10;Réponse : La mise en place..." style="width: 100%; margin-bottom: 15px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; resize: vertical;"></textarea>
+
+            <button class="btn-action" style="background-color: #22c55e;" onclick="importerTexteIA()">
+                📥 Créer toutes les cartes
+            </button>
+        </div>
+        <!-- FIN DE LA NOUVELLE ZONE -->
+
         <div class="dashboard" id="dashboardGrid"></div>
       </div>
 
@@ -136,7 +155,7 @@
     <div class="modal-card">
       <h3>Ajouter une nouvelle carte</h3>
       <input type="text" id="modalUe" placeholder="Ex: UE4">
-      <input type="text" id="modalChap" placeholder="Ex: Évaluation des méthodes diagnostiques">
+      <input type="text" id="modalChap" placeholder="Ex: Embryologie">
       <textarea id="modalQ" placeholder="Question..."></textarea>
       <textarea id="modalA" placeholder="Réponse..."></textarea>
       <div style="display:flex; justify-content:flex-end; gap:10px;">
@@ -156,12 +175,25 @@
     let currentFiltered = [];
     let cardIdx = 0;
 
+    // ICI : J'AI REMPLACÉ PAR TES VRAIES CARTES D'EMBRYOLOGIE
     const defaultUE4Cards = [
-      { ue: "UE4", chapter: "Évaluation des méthodes diagnostiques", question: "Qu'est-ce que la sensibilité (Se) d'un test ?", answer: "Capacité du test à donner un résultat positif quand la maladie est présente : P(T+ | M+).", status: 0 },
-      { ue: "UE4", chapter: "Évaluation des méthodes diagnostiques", question: "Qu'est-ce que la spécificité (Spe) d'un test ?", answer: "Capacité du test à donner un résultat négatif quand la maladie est absente : P(T- | M-).", status: 0 },
-      { ue: "UE4", chapter: "Évaluation des méthodes diagnostiques", question: "De quoi dépendent les valeurs prédictives (VPP / VPN) ?", answer: "Elles dépendent directement de la prévalence de la maladie dans la population étudiée.", status: 0 },
-      { ue: "UE4", chapter: "Biostatistiques et Probabilités", question: "Quelle est la formule de la loi de Bayes ?", answer: "P(A|B) = [P(B|A) * P(A)] / P(B)", status: 0 },
-      { ue: "UE4", chapter: "Biostatistiques et Probabilités", question: "Qu'est-ce que l'erreur de type I (risque alpha) ?", answer: "C'est le risque de rejeter l'hypothèse nulle H0 alors qu'elle est vraie (faux positif).", status: 0 }
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Quelles sont les dates limites de la période embryonnaire ?", answer: "De la fécondation jusqu'à la 8ᵉ semaine.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Quel est le rôle principal de la période embryonnaire ?", answer: "La mise en place des ébauches d'organes.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Quelles sont les dates limites de la période fœtale ?", answer: "De la 8ᵉ semaine jusqu'à la naissance (38ᵉ semaine / 9ᵉ mois).", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Quel est le rôle principal de la période fœtale ?", answer: "La croissance et la maturation des organes.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Définition : Segmentation de l'embryon", answer: "Série de divisions mitotiques successives de l'œuf fécondé sans qu'il n'augmente de volume global (durant la 1ʳᵉ semaine).", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Définition : Blastomère", answer: "Chacune des petites cellules individuellement formées lors des premières divisions de l'œuf (segmentation).", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Définition : Nidation (ou Implantation)", answer: "Fixation et enfouissement de l'embryon dans la paroi de l'utérus (l'endomètre), débutant vers le 6ᵉ-7ᵉ jour après la fécondation.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Définition : Embryon didermique", answer: "Embryon constitué de 2 feuillets de cellules au cours de la 2ᵉ semaine de développement.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Position et rôle de l'épiblaste", answer: "Feuillet supérieur (dorsal) de l'embryon didermique. C'est la couche fondamentale qui donnera la totalité des tissus du futur bébé et les 3 feuillets embryonnaires.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Position et rôle de l'hypoblaste", answer: "Feuillet inférieur (ventral), sous l'épiblaste. Tapisse les cavités annexes (vésicule vitelline) mais ne participe PAS à la formation des tissus du bébé.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Définition : Gastrulation", answer: "Étape du développement permettant le passage d'un embryon à 2 feuillets (didermique) à un embryon à 3 feuillets (tridermique) à la 3ᵉ semaine.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Quels sont les dérivés de l'Ectoderme (feuillet externe) ?", answer: "La peau (épiderme) et le système nerveux.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Quels sont les dérivés du Mésoderme (feuillet moyen) ?", answer: "Les os, les muscles, le cœur, les reins et le sang.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Quels sont les dérivés de l'Endoderme (feuillet interne) ?", answer: "Le tube digestif et l'appareil respiratoire (poumons).", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Définition : Neurulation", answer: "Processus de formation du tube neural (futur cerveau et moelle épinière) à partir de l'ectoderme (fin 3ᵉ - 4ᵉ semaine).", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Définition : Histogenèse", answer: "Processus de formation et de différenciation des différents tissus spécialisés du corps à partir des 3 feuillets embryonnaires.", status: 0 },
+      { ue: "UE4", chapter: "Préambule de l'embryologie", question: "Quelles sont les 6 grandes étapes de la période embryonnaire et leur chronologie ?", answer: "1. Segmentation (1ʳᵉ sem) | 2. Pré-gastrulation (2ᵉ sem) | 3. Gastrulation (3ᵉ sem) | 4. Neurulation (fin 3ᵉ-4ᵉ sem) | 5. Formation des parois corporelles (fin 4ᵉ sem) | 6. Organogenèse (4ᵉ-8ᵉ sem).", status: 0 }
     ];
 
     function initSupabase() {
@@ -242,6 +274,67 @@
       } else {
         alert("Cartes UE4 importées avec succès !");
         await loadCards();
+      }
+    }
+
+    // ICI : NOUVELLE FONCTION POUR L'IMPORTATION PAR COPIER-COLLER
+    async function importerTexteIA() {
+      const ue = document.getElementById('import-ue').value.trim() || "Général";
+      const chapter = document.getElementById('import-chapter').value.trim();
+      const texteBrut = document.getElementById('import-texte').value.trim();
+
+      if (!chapter || !texteBrut) {
+          alert("Il faut donner au moins un nom de chapitre et coller le texte de l'IA !");
+          return;
+      }
+
+      if (!currentUser) {
+          alert("Tu dois être connecté !");
+          return;
+      }
+
+      const lignes = texteBrut.split('\n');
+      let cartesACreer = [];
+      let questionEnCours = "";
+
+      for (let ligne of lignes) {
+          ligne = ligne.trim();
+          
+          if (ligne.startsWith("Question :")) {
+              questionEnCours = ligne.replace("Question :", "").trim();
+          } 
+          else if (ligne.startsWith("Réponse :") && questionEnCours !== "") {
+              let reponseEnCours = ligne.replace("Réponse :", "").trim();
+              
+              cartesACreer.push({
+                  user_id: currentUser.id,
+                  ue: ue,
+                  chapter: chapter,
+                  question: questionEnCours,
+                  answer: reponseEnCours,
+                  status: 0
+              });
+              
+              questionEnCours = "";
+          }
+      }
+
+      if (cartesACreer.length === 0) {
+          alert("Aucune carte trouvée. Vérifie que le texte de l'IA contient bien 'Question :' et 'Réponse :'.");
+          return;
+      }
+
+      const { error } = await dbClient.from('flashcards').insert(cartesACreer);
+
+      if (error) {
+          alert("Erreur lors de l'importation : " + error.message);
+      } else {
+          alert("🎉 Succès ! " + cartesACreer.length + " cartes créées dans le chapitre '" + chapter + "'.");
+          // On vide les cases pour faire propre
+          document.getElementById('import-texte').value = ""; 
+          document.getElementById('import-chapter').value = ""; 
+          // On recharge l'affichage sans avoir à actualiser la page
+          await loadCards(); 
       }
     }
 
