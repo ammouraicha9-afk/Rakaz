@@ -79,19 +79,19 @@
   </div>
 
   <script>
-    let url = localStorage.getItem('sp_url');
-    let key = localStorage.getItem('sp_key');
+    const url = "https://xijdfpaawyzauybzhywc.supabase.co";
+    const key = "sb_publishable_0kZheKI4nxeKtyao-4kI6Q_iCMAKcka";
 
-    if (!url) {
-      url = prompt("Entrez votre Project URL Supabase (ex: https://xxx.supabase.co) :");
-      if (url) localStorage.setItem('sp_url', url.replace('/v1',''));
-    }
-    if (!key) {
-      key = prompt("Entrez votre Publishable API Key :");
-      if (key) localStorage.setItem('sp_key', key);
-    }
+    let dbClient = null;
 
-    const dbClient = window.supabase ? window.supabase.createClient(url, key) : null;
+    function initSupabase() {
+      if (window.supabase && window.supabase.createClient) {
+        dbClient = window.supabase.createClient(url, key);
+        checkUser();
+      } else {
+        setTimeout(initSupabase, 100);
+      }
+    }
 
     let currentUser = null;
     let cardsData = [];
@@ -99,9 +99,9 @@
     let cardIdx = 0;
 
     async function checkUser() {
-      if(!dbClient) return;
+      if (!dbClient) return;
       const { data: { user } } = await dbClient.auth.getUser();
-      if(user) {
+      if (user) {
         currentUser = user;
         document.getElementById('authView').style.display = 'none';
         document.getElementById('appView').style.display = 'flex';
@@ -110,31 +110,31 @@
     }
 
     async function handleLogin() {
-      if(!dbClient) return alert("Configuration Supabase manquante.");
+      if (!dbClient) return alert("Initialisation en cours, veuillez rééayer dans 2 secondes.");
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       const { data, error } = await dbClient.auth.signInWithPassword({ email, password });
-      if(error) document.getElementById('authError').innerText = error.message;
+      if (error) document.getElementById('authError').innerText = error.message;
       else checkUser();
     }
 
     async function handleSignUp() {
-      if(!dbClient) return alert("Configuration Supabase manquante.");
+      if (!dbClient) return alert("Initialisation en cours, veuillez rééayer dans 2 secondes.");
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       const { data, error } = await dbClient.auth.signUp({ email, password });
-      if(error) document.getElementById('authError').innerText = error.message;
-      else alert("Compte créé ! Vous pouvez vous connecter.");
+      if (error) document.getElementById('authError').innerText = error.message;
+      else alert("Compte créé avec succès ! Vous pouvez vous connecter.");
     }
 
     async function handleLogout() {
-      if(dbClient) await dbClient.auth.signOut();
+      if (dbClient) await dbClient.auth.signOut();
       location.reload();
     }
 
     async function loadCards() {
       const { data, error } = await dbClient.from('flashcards').select('*');
-      if(!error) { cardsData = data; renderDashboard(); }
+      if (!error) { cardsData = data; renderDashboard(); }
     }
 
     function renderDashboard() {
@@ -172,7 +172,7 @@
 
     function showCard() {
       document.getElementById('card').classList.remove('flipped');
-      if(currentFiltered.length > 0) {
+      if (currentFiltered.length > 0) {
         document.getElementById('cardQ').innerHTML = currentFiltered[cardIdx].question;
         document.getElementById('cardA').innerHTML = currentFiltered[cardIdx].answer;
       }
@@ -193,13 +193,13 @@
       const chapter = prompt("Nom du Chapitre :", "Préambule");
       const question = prompt("Question (Recto) :");
       const answer = prompt("Réponse (Verso) :");
-      if(ue && chapter && question && answer) {
+      if (ue && chapter && question && answer) {
         await dbClient.from('flashcards').insert([{ user_id: currentUser.id, ue, chapter, question, answer }]);
         loadCards();
       }
     }
 
-    checkUser();
+    initSupabase();
   </script>
 </body>
 </html>
