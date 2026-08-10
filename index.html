@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rakaz</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root { --primary: #4f46e5; --bg: #f8fafc; --text: #0f172a; --easy: #22c55e; --medium: #f59e0b; --hard: #ef4444; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+    .sidebar { width: 280px; background: #1e293b; color: white; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+    .btn-home { background: #38bdf8; color: #0f172a; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .main-content { flex: 1; display: flex; flex-direction: column; padding: 20px; position: relative; overflow-y: auto; }
+    .top-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; }
+    .btn-action { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; width: 100vw; background: #1e293b; color: white; }
+    .auth-box { background: white; color: var(--text); padding: 30px; border-radius: 12px; width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 15px; }
+    .auth-box input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+    .dashboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; width: 100%; max-width: 900px; margin: 0 auto; }
+    .dash-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; cursor: pointer; }
+    .card-container { width: 100%; max-width: 520px; height: 320px; perspective: 1000px; cursor: pointer; margin: 0 auto; }
+    .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+    .card.flipped { transform: rotateY(180deg); }
+    .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; border-radius: 16px; text-align: center; }
+    .front { background: white; font-size: 1.2rem; font-weight: 600; border: 2px solid #e2e8f0; }
+    .back { background: var(--primary); color: white; transform: rotateY(180deg); font-size: 1rem; text-align: left; align-items: flex-start; justify-content: flex-start; line-height: 1.6; }
+    .rating-controls { margin-top: 20px; display: flex; gap: 12px; justify-content: center; }
+    .btn-rate { border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div id="authView" class="auth-container">
+    <div class="auth-box">
+      <h2 style="text-align:center;">Rakaz</h2>
+      <input type="email" id="email" placeholder="Votre email">
+      <input type="password" id="password" placeholder="Mot de passe">
+      <button class="btn-action" onclick="handleLogin()">Se connecter</button>
+      <button class="btn-action" style="background:#64748b;" onclick="handleSignUp()">S'inscrire</button>
+      <p id="authError" style="color:red; font-size:0.8rem; text-align:center;"></p>
+    </div>
+  </div>
+
+  <div id="appView" style="display:none; width:100vw; height:100vh;">
+    <div class="sidebar">
+      <h1 style="font-size: 1.4rem; text-align: center; margin-bottom: 10px; color: #38bdf8;">Rakaz</h1>
+      <button class="btn-home" onclick="showDashboard()">🏠 Vue d'ensemble</button>
+      <div id="sidebarContent"></div>
+      <button class="btn-action" style="background:#ef4444; margin-top:auto;" onclick="handleLogout()">Déconnexion</button>
+    </div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <button class="btn-action" onclick="openModal()">+ Nouvelle Carte</button>
+      </div>
+
+      <div id="dashboardView">
+        <h2 style="margin-bottom:20px; text-align:center;">Tableau de bord — Rakaz</h2>
+        <div class="dashboard" id="dashboardGrid"></div>
+      </div>
+
+      <div id="practiceView" style="display:none; text-align:center;">
+        <h2 id="chapterTitle"></h2>
+        <div class="card-container" onclick="flipCard()" style="margin-top:20px;">
+          <div class="card" id="card">
+            <div class="card-face front" id="cardQ">...</div>
+            <div class="card-face back" id="cardA">...</div>
+          </div>
+        </div>
+        <div class="rating-controls">
+          <button class="btn-rate" style="background:var(--hard);" onclick="rateCard(0)">À revoir</button>
+          <button class="btn-rate" style="background:var(--medium);" onclick="rateCard(1)">Moyen</button>
+          <button class="btn-rate" style="background:var(--easy);" onclick="rateCard(2)">Acquis !</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = localStorage.getItem('sp_url') || prompt("Entrez votre Project URL Supabase (ex: https://xxx.supabase.co) :");
+    const SUPABASE_KEY = localStorage.getItem('sp_key') || prompt("Entrez votre Publishable API Key :");
+
+    if(SUPABASE_URL) localStorage.setItem('sp_url', SUPABASE_URL.replace('/v1',''));
+    if(SUPABASE_KEY) localStorage.setItem('sp_key', SUPABASE_KEY);
+
+    const supabase = window.supabase.createClient(localStorage.getItem('sp_url'), localStorage.getItem('sp_key'));
+
+    let currentUser = null;
+    let cardsData = [];
+    let currentFiltered = [];
+    let cardIdx = 0;
+
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if(user) {
+        currentUser = user;
+        document.getElementById('authView').style.display = 'none';
+        document.getElementById('appView').style.display = 'flex';
+        loadCards();
+      }
+    }
+
+    async function handleLogin() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if(error) document.getElementById('authError').innerText = error.message;
+      else checkUser();
+    }
+
+    async function handleSignUp() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if(error) document.getElementById('authError').innerText = error.message;
+      else alert("Compte créé ! Vous pouvez vous connecter.");
+    }
+
+    async function handleLogout() {
+      await supabase.auth.signOut();
+      location.reload();
+    }
+
+    async function loadCards() {
+      const { data, error } = await supabase.from('flashcards').select('*');
+      if(!error) { cardsData = data; renderDashboard(); }
+    }
+
+    function renderDashboard() {
+      document.getElementById('dashboardView').style.display = 'block';
+      document.getElementById('practiceView').style.display = 'none';
+      const grid = document.getElementById('dashboardGrid');
+      grid.innerHTML = '';
+      
+      const chapters = [...new Set(cardsData.map(c => c.chapter))];
+      chapters.forEach(chap => {
+        const chapCards = cardsData.filter(c => c.chapter === chap);
+        const acquired = chapCards.filter(c => c.status === 2).length;
+        const percent = chapCards.length ? Math.round((acquired/chapCards.length)*100) : 0;
+        
+        grid.innerHTML += `
+          <div class="dash-card" onclick="startPractice('${chap}')">
+            <h3>${chap}</h3>
+            <p style="font-size:1.5rem; font-weight:bold; color:var(--primary); margin:10px 0;">${percent}%</p>
+            <p style="font-size:0.8rem; color:#64748b;">${acquired}/${chapCards.length} acquises</p>
+          </div>
+        `;
+      });
+    }
+
+    function showDashboard() { renderDashboard(); }
+
+    function startPractice(chap) {
+      currentFiltered = cardsData.filter(c => c.chapter === chap);
+      cardIdx = 0;
+      document.getElementById('chapterTitle').innerText = chap;
+      document.getElementById('dashboardView').style.display = 'none';
+      document.getElementById('practiceView').style.display = 'block';
+      showCard();
+    }
+
+    function showCard() {
+      document.getElementById('card').classList.remove('flipped');
+      if(currentFiltered.length > 0) {
+        document.getElementById('cardQ').innerHTML = currentFiltered[cardIdx].question;
+        document.getElementById('cardA').innerHTML = currentFiltered[cardIdx].answer;
+      }
+    }
+
+    function flipCard() { document.getElementById('card').classList.toggle('flipped'); }
+
+    async function rateCard(status) {
+      const card = currentFiltered[cardIdx];
+      card.status = status;
+      await supabase.from('flashcards').update({ status }).eq('id', card.id);
+      cardIdx = (cardIdx + 1) % currentFiltered.length;
+      showCard();
+    }
+
+    async function openModal() {
+      const ue = prompt("Nom de l'UE (ex: UE4) :", "UE4");
+      const chapter = prompt("Nom du Chapitre :", "Préambule");
+      const question = prompt("Question (Recto) :");
+      const answer = prompt("Réponse (Verso) :");
+      if(ue && chapter && question && answer) {
+        await supabase.from('flashcards').insert([{ user_id: currentUser.id, ue, chapter, question, answer }]);
+        loadCards();
+      }
+    }
+
+    checkUser();
+  </script>
+</body>
+</html>
