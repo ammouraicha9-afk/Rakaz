@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rakaz</title>
   <link rel="icon" type="image/png" href="rakaz-icone.png">
+  <link rel="apple-touch-icon" href="rakaz-icone.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Rakaz">
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -113,14 +117,27 @@
 
       <div id="dashboardView">
         
-        <!-- IMPORTATION RAPIDE -->
+        <!-- IMPORTATION RAPIDE AVEC MENUS DÉROULANTS -->
         <div style="margin-bottom: 30px; padding: 25px; background-color: white; border-radius: 14px; border: 2px dashed #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
             <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 1.2rem;">🚀 Création Rapide (Copier-Coller l'IA)</h3>
             <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 15px;">Collez ici les questions générées par l'IA. (Format exact: "Question : ..." puis "Réponse : ...")</p>
 
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <input type="text" id="import-ue" placeholder="UE (ex: UE4)" style="flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;">
-                <input type="text" id="import-chapter" placeholder="Nom du chapitre (ex: Préambule de l'embryologie)" style="flex: 2; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;">
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:#64748b;">UE :</label>
+                    <select id="importUeSelect" onchange="handleImportUeChange()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; margin-top: 4px;">
+                        <option value="new">➕ Créer une nouvelle UE...</option>
+                    </select>
+                    <input type="text" id="importUeInput" placeholder="Nom de la nouvelle UE" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; margin-top: 6px; display:none;">
+                </div>
+
+                <div style="flex: 2; min-width: 200px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:#64748b;">Chapitre / Dossier :</label>
+                    <select id="importChapSelect" onchange="handleImportChapChange()" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; margin-top: 4px;">
+                        <option value="new">➕ Créer un nouveau chapitre...</option>
+                    </select>
+                    <input type="text" id="importChapInput" placeholder="Nom du nouveau chapitre" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; margin-top: 6px; display:none;">
+                </div>
             </div>
 
             <textarea id="import-texte" rows="5" placeholder="Question : ...&#10;Réponse : ..." style="width: 100%; margin-bottom: 15px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; resize: vertical;"></textarea>
@@ -284,12 +301,12 @@
       }
       cardsData = data || [];
       
-      // Afficher ou cacher le bouton d'importation UE4 s'il existe déjà
       const hasUE4 = cardsData.some(c => c.ue === 'UE4' && c.status !== -1);
       document.getElementById('importUe4Btn').style.display = hasUE4 ? 'none' : 'inline-flex';
 
       renderSidebar();
       renderDashboard();
+      updateImportDropdowns();
     }
 
     async function importUE4Cards() {
@@ -318,13 +335,48 @@
       }
     }
 
+    // GESTION DES LISTES DÉROULANTES D'IMPORTATION RAPIDE
+    function updateImportDropdowns() {
+      const activeCards = cardsData.filter(c => c.status !== -1);
+      const ues = [...new Set(activeCards.map(c => c.ue || 'Général'))];
+      const ueSelect = document.getElementById('importUeSelect');
+      ueSelect.innerHTML = ues.map(u => `<option value="${u}">${u}</option>`).join('') + `<option value="new">➕ Créer une nouvelle UE...</option>`;
+      handleImportUeChange();
+    }
+
+    function handleImportUeChange() {
+      const ueSelect = document.getElementById('importUeSelect');
+      const ueInput = document.getElementById('importUeInput');
+      ueInput.style.display = ueSelect.value === 'new' ? 'block' : 'none';
+
+      const selectedUe = ueSelect.value === 'new' ? '' : ueSelect.value;
+      const activeCards = cardsData.filter(c => c.status !== -1);
+      const chapters = [...new Set(activeCards.filter(c => (c.ue || 'Général') === selectedUe).map(c => c.chapter))];
+      const chapSelect = document.getElementById('importChapSelect');
+      
+      chapSelect.innerHTML = chapters.map(c => `<option value="${c}">${c}</option>`).join('') + `<option value="new">➕ Créer un nouveau chapitre...</option>`;
+      handleImportChapChange();
+    }
+
+    function handleImportChapChange() {
+      const chapSelect = document.getElementById('importChapSelect');
+      const chapInput = document.getElementById('importChapInput');
+      chapInput.style.display = chapSelect.value === 'new' ? 'block' : 'none';
+    }
+
     async function importerTexteIA() {
-      const ue = document.getElementById('import-ue').value.trim() || "Général";
-      const chapter = document.getElementById('import-chapter').value.trim();
+      const ueSelect = document.getElementById('importUeSelect');
+      const ueInput = document.getElementById('importUeInput');
+      const ue = ueSelect.value === 'new' ? ueInput.value.trim() : ueSelect.value;
+
+      const chapSelect = document.getElementById('importChapSelect');
+      const chapInput = document.getElementById('importChapInput');
+      const chapter = chapSelect.value === 'new' ? chapInput.value.trim() : chapSelect.value;
+
       const texteBrut = document.getElementById('import-texte').value.trim();
 
-      if (!chapter || !texteBrut) {
-          alert("Indiquez un nom de chapitre et collez le texte !");
+      if (!ue || !chapter || !texteBrut) {
+          alert("Indiquez ou sélectionnez une UE, un chapitre et collez le texte !");
           return;
       }
       if (!currentUser) return;
@@ -362,7 +414,6 @@
       } else {
           alert("🎉 " + cartesACreer.length + " cartes créées avec succès !");
           document.getElementById('import-texte').value = ""; 
-          document.getElementById('import-chapter').value = ""; 
           await loadCards(); 
       }
     }
@@ -609,7 +660,6 @@
       }
 
       currentFiltered = cardsData.filter(c => selectedChapters.includes(c.chapter) && c.status !== -1);
-      // Mélanger les cartes pour l'examen
       currentFiltered.sort(() => Math.random() - 0.5);
 
       if (currentFiltered.length === 0) {
@@ -655,7 +705,7 @@
       `).join('');
     }
 
-    // MODAL CRÉATION
+    // MODAL CRÉATION CLASSIQUE
     function openNewCardModal() {
       document.getElementById('createModal').style.display = 'flex';
       const ues = [...new Set(cardsData.filter(c => c.status !== -1).map(c => c.ue || 'Général'))];
