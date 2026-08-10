@@ -36,7 +36,7 @@
 
     /* Main Area */
     .main-content { flex: 1; display: flex; flex-direction: column; padding: 25px; overflow-y: auto; }
-    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px; }
     .btn-action { background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; gap: 6px; }
     .btn-action:hover { background: var(--primary-hover); }
 
@@ -111,7 +111,10 @@
     <div class="main-content">
       <div class="top-bar">
         <h2 id="mainTitle">Tableau de bord</h2>
-        <button class="btn-action" onclick="openNewCardModal()">+ Nouvelle Carte</button>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-action" style="background:#0284c7;" onclick="importUE4Cards()">📥 Importer UE4</button>
+          <button class="btn-action" onclick="openNewCardModal()">+ Nouvelle Carte</button>
+        </div>
       </div>
 
       <!-- Dashboard -->
@@ -223,7 +226,6 @@
     let cardIdx = 0;
     let folderToDelete = null;
 
-    // Fiches UE4 intégrées
     const defaultUE4Cards = [
       { ue: "UE4", chapter: "Évaluation des méthodes diagnostiques", question: "Qu'est-ce que la sensibilité (Se) d'un test ?", answer: "Capacité du test à donner un résultat positif quand la maladie est présente : P(T+ | M+).", status: 0, is_trashed: false },
       { ue: "UE4", chapter: "Évaluation des méthodes diagnostiques", question: "Qu'est-ce que la spécificité (Spe) d'un test ?", answer: "Capacité du test à donner un résultat négatif quand la maladie est absente : P(T- | M-).", status: 0, is_trashed: false },
@@ -268,17 +270,18 @@
       const { data, error } = await dbClient.from('flashcards').select('*');
       if (!error) {
         cardsData = data || [];
-        if (cardsData.length === 0) {
-          for (let c of defaultUE4Cards) {
-            c.user_id = currentUser.id;
-            await dbClient.from('flashcards').insert([c]);
-          }
-          const reload = await dbClient.from('flashcards').select('*');
-          cardsData = reload.data || [];
-        }
         renderSidebar();
         renderDashboard();
       }
+    }
+
+    async function importUE4Cards() {
+      for (let c of defaultUE4Cards) {
+        c.user_id = currentUser.id;
+        await dbClient.from('flashcards').insert([c]);
+      }
+      alert("Cartes UE4 importées avec succès !");
+      loadCards();
     }
 
     function getColorForPercent(percent) {
@@ -334,7 +337,7 @@
       const chapters = [...new Set(activeCards.map(c => c.chapter))];
       
       if (chapters.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:#64748b;">Aucune carte active. Cliquez sur "+ Nouvelle Carte" pour commencer !</p>`;
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:#64748b;">Aucune carte active. Cliquez sur "📥 Importer UE4" ou "+ Nouvelle Carte" pour commencer !</p>`;
         return;
       }
 
@@ -413,7 +416,6 @@
       if (question && answer) {
         await dbClient.from('flashcards').insert([{ user_id: currentUser.id, ue, chapter, question, answer, status: 0, is_trashed: false }]);
         closeModal('createModal');
-        // Vider la question et réponse, mais garder l'UE et le chapitre pour créer la suivante rapidement
         qInput.value = '';
         aInput.value = '';
         loadCards();
