@@ -1,0 +1,20 @@
+{
+  "name": "Rakaz",
+  "short_name": "Rakaz",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e293b",
+  "icons": [
+    {
+      "src": "rakaz-icone.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "rakaz-icone.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
