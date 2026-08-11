@@ -268,13 +268,8 @@
         <option value="medium_hard">"À revoir" 🔴 + "Moyen" 🟠</option>
       </select>
 
-      <label style="font-size:0.85rem; font-weight:bold; margin-top:10px;">Nombre de questions :</label>
-      <select id="examCount" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
-        <option value="all">Toutes</option>
-        <option value="10">10 questions</option>
-        <option value="20">20 questions</option>
-        <option value="30">30 questions</option>
-      </select>
+      <label style="font-size:0.85rem; font-weight:bold; margin-top:10px;">Nombre de questions (laisser vide pour toutes) :</label>
+      <input type="number" id="examCount" value="10" min="1" placeholder="Ex: 12" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
       
       <label style="font-size:0.85rem; font-weight:bold; margin-top:10px;">Temps par question (Chronomètre) :</label>
       <select id="examTimer" style="width:100%; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
@@ -446,7 +441,7 @@
       const isRandom = document.getElementById('examRandom').checked;
       const timer = parseInt(document.getElementById('examTimer').value);
       const difficulty = document.getElementById('examDifficulty').value;
-      const count = document.getElementById('examCount').value;
+      const countInput = document.getElementById('examCount').value.trim();
 
       if (selectedChapters.length === 0) { alert("Sélectionne au moins un chapitre !"); return; }
 
@@ -459,14 +454,17 @@
       }
 
       if (filtered.length === 0) {
-        alert("Aucune carte ne correspond à ces critères (tu as peut-être déjà tout validé !).");
+        alert("Aucune carte ne correspond à ces critères !");
         return;
       }
 
       if(isRandom) filtered.sort(() => Math.random() - 0.5);
 
-      if(count !== 'all') {
-        filtered = filtered.slice(0, parseInt(count));
+      if(countInput !== '') {
+        const countNum = parseInt(countInput);
+        if(!isNaN(countNum) && countNum > 0) {
+          filtered = filtered.slice(0, countNum);
+        }
       }
 
       currentFiltered = filtered;
@@ -805,7 +803,7 @@
               continue;
           }
           
-          if (step === 0) {
+          jsStep: if (step === 0) {
               currentQ = ligne;
               step = 1;
           } else if (step === 1) {
