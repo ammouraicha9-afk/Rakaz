@@ -152,7 +152,7 @@
                     <input type="text" id="importChapInput" placeholder="Nom nouveau chapitre" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; margin-top: 6px; display:none;">
                 </div>
             </div>
-            <textarea id="import-texte" rows="3" placeholder="Question : ...&#10;Réponse : ..." style="width: 100%; margin-bottom: 15px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;"></textarea>
+            <textarea id="import-texte" rows="4" placeholder="Question de la carte 1&#10;Réponse de la carte 1&#10;&#10;Question de la carte 2&#10;Réponse de la carte 2" style="width: 100%; margin-bottom: 15px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;"></textarea>
             <button class="btn-action" style="background-color: #22c55e;" onclick="importerTexteIA()">📥 Créer</button>
         </div>
         <div class="dashboard" id="dashboardGrid"></div>
@@ -452,7 +452,6 @@
 
       let filtered = cardsData.filter(c => selectedChapters.includes(c.chapter) && c.status !== -1);
       
-      // Filtre de difficulté
       if(difficulty === 'hard') {
         filtered = filtered.filter(c => c.status === 0);
       } else if(difficulty === 'medium_hard') {
@@ -464,10 +463,8 @@
         return;
       }
 
-      // Mélange
       if(isRandom) filtered.sort(() => Math.random() - 0.5);
 
-      // Limite du nombre de questions
       if(count !== 'all') {
         filtered = filtered.slice(0, parseInt(count));
       }
@@ -510,7 +507,6 @@
       const card = document.getElementById('card');
       card.classList.toggle('flipped'); 
       
-      // Si la carte est retournée pour voir la réponse, on arrête le chrono
       if(card.classList.contains('flipped')) {
         stopTimer();
       }
@@ -672,7 +668,6 @@
       }
     }
 
-    /* --- FONCTIONS DE RENOMMAGE (UE et DOSSIERS) --- */
     async function renameFolder(oldChap) {
       const newChap = prompt(`Renommer le dossier "${oldChap}" en :`, oldChap);
       if (newChap && newChap.trim() !== "" && newChap !== oldChap) {
@@ -744,7 +739,6 @@
         const ueDiv = document.createElement('div');
         const safeUe = ue.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
-        // Ajout du bouton pour modifier l'UE
         ueDiv.innerHTML = `
           <div class="ue-header">
             <span>📁 ${ue}</span>
@@ -757,7 +751,6 @@
         chapInUe.forEach(chap => {
           const safeChap = chap.replace(/'/g, "\\'").replace(/"/g, '&quot;');
           
-          // Ajout des boutons pour modifier et supprimer le dossier
           chapDiv.innerHTML += `
             <div class="folder-item">
               <span onclick="startPractice('${safeChap}')" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">📄 ${chap}</span>
@@ -794,19 +787,46 @@
       const texteBrut = document.getElementById('import-texte').value.trim();
       if (!ue || !chapter || !texteBrut) return;
       
-      const lignes = texteBrut.split('\n'); let cartesACreer = []; let q = "";
+      const lignes = texteBrut.split('\n');
+      let cartesACreer = [];
+      let currentQ = "";
+      let currentA = "";
+      let step = 0;
+
       for (let ligne of lignes) {
           ligne = ligne.trim();
-          if (ligne.startsWith("Question :")) q = ligne.replace("Question :", "").trim();
-          else if (ligne.startsWith("Réponse :") && q !== "") {
-              cartesACreer.push({ user_id: currentUser.id, ue: ue, chapter: chapter, question: q, answer: ligne.replace("Réponse :", "").trim(), status: 0 });
-              q = "";
+          if (ligne === "") {
+              if (currentQ && currentA) {
+                  cartesACreer.push({ user_id: currentUser.id, ue: ue, chapter: chapter, question: currentQ, answer: currentA, status: 0 });
+                  currentQ = "";
+                  currentA = "";
+                  step = 0;
+              }
+              continue;
+          }
+          
+          if (step === 0) {
+              currentQ = ligne;
+              step = 1;
+          } else if (step === 1) {
+              currentA = ligne;
+              cartesACreer.push({ user_id: currentUser.id, ue: ue, chapter: chapter, question: currentQ, answer: currentA, status: 0 });
+              currentQ = "";
+              currentA = "";
+              step = 0;
           }
       }
+      
+      if (currentQ && currentA) {
+          cartesACreer.push({ user_id: currentUser.id, ue: ue, chapter: chapter, question: currentQ, answer: currentA, status: 0 });
+      }
+
       if (cartesACreer.length > 0) {
         await dbClient.from('flashcards').insert(cartesACreer);
         document.getElementById('import-texte').value = ""; 
         await loadCards(); 
+      } else {
+        alert("Vérifie ton format : une ligne pour la question, une ligne pour la réponse, et un saut de ligne entre chaque carte.");
       }
     }
 
