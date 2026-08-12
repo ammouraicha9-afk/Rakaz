@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="rakaz-icone.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Rakaz">
+  <meta name="apple-mobile-web-app-title" content="Rakkaz">
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -97,8 +97,8 @@
   <!-- AUTH VIEW -->
   <div id="authView" class="auth-container">
     <div class="auth-box">
-      <div style="text-align: center;"><img src="rakaz-icone.png" alt="Rakaz" style="width: 60px; height: 60px; border-radius: 50%;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM0ZjQ2ZTUiLz48L3N2Zz4='"></div>
-      <h2>Rakaz</h2>
+      <div style="text-align: center;"><img src="rakaz-icone.png" alt="Rakkaz" style="width: 60px; height: 60px; border-radius: 50%;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM0ZjQ2ZTUiLz48L3N2Zz4='"></div>
+      <h2>Rakkaz</h2>
       <input type="email" id="email" placeholder="Votre email">
       <input type="password" id="password" placeholder="Mot de passe">
       <button class="btn-action" onclick="handleLogin()">Se connecter</button>
@@ -112,7 +112,7 @@
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h1><img src="rakaz-icone.png" alt="Icone" onerror="this.style.display='none'"> Rakaz</h1>
+        <h1><img src="rakaz-icone.png" alt="Icone" onerror="this.style.display='none'"> Rakkaz</h1>
         <button class="menu-toggle" style="color:white; display:block; padding:5px;" onclick="toggleSidebar()">✕</button>
       </div>
       <button class="nav-btn" onclick="showDashboard()">🏠 Vue d'ensemble</button>
@@ -350,6 +350,7 @@
         renderSidebar();
         if(document.getElementById('dashboardView').style.display !== 'none') renderDashboard();
         updateImportDropdowns();
+        if(document.getElementById('trashView').style.display === 'block') renderTrashView();
       }
     }
 
@@ -662,7 +663,10 @@
       if(confirm("Mettre cette carte à la corbeille ?")) {
         await dbClient.from('flashcards').update({ status: -1 }).eq('id', id);
         await loadCards();
-        openManageView(cardsData.find(c => c.id === id).chapter);
+        if(document.getElementById('manageView').style.display === 'block') {
+           const card = cardsData.find(c => c.id === id);
+           if (card) openManageView(card.chapter);
+        }
       }
     }
 
@@ -701,17 +705,36 @@
     function updateModalDropdowns(defaultUe = "", defaultChap = "") {
       const ues = [...new Set(cardsData.filter(c => c.status !== -1).map(c => c.ue || 'Général'))];
       const ueSelect = document.getElementById('modalUeSelect');
-      ueSelect.innerHTML = ues.map(u => `<option value="${u}">${u}</option>`).join('') + `<option value="new">➕ Créer...</option>`;
+      
+      ueSelect.innerHTML = ues.map(u => `<option value="${u}">${u}</option>`).join('') + `<option value="new">➕ Nouvelle UE...</option>`;
       if(defaultUe) ueSelect.value = defaultUe;
-      handleUeChange();
+      
+      handleUeChange(); 
 
       const chapSelect = document.getElementById('modalChapSelect');
-      if(defaultChap) chapSelect.value = defaultChap;
+      if(defaultChap) {
+        chapSelect.value = defaultChap;
+      }
       handleChapChange();
     }
 
-    function handleUeChange() { document.getElementById('modalUeInput').style.display = document.getElementById('modalUeSelect').value === 'new' ? 'block' : 'none'; }
-    function handleChapChange() { document.getElementById('modalChapInput').style.display = document.getElementById('modalChapSelect').value === 'new' ? 'block' : 'none'; }
+    function handleUeChange() { 
+      const ueSelect = document.getElementById('modalUeSelect');
+      document.getElementById('modalUeInput').style.display = ueSelect.value === 'new' ? 'block' : 'none'; 
+      
+      const chapSelect = document.getElementById('modalChapSelect');
+      if (ueSelect.value !== 'new') {
+        const chapters = [...new Set(cardsData.filter(c => c.status !== -1 && (c.ue || 'Général') === ueSelect.value).map(c => c.chapter))];
+        chapSelect.innerHTML = chapters.map(c => `<option value="${c}">${c}</option>`).join('') + `<option value="new">➕ Nouveau chapitre...</option>`;
+      } else {
+        chapSelect.innerHTML = `<option value="new">➕ Nouveau chapitre...</option>`;
+      }
+      handleChapChange();
+    }
+
+    function handleChapChange() { 
+      document.getElementById('modalChapInput').style.display = document.getElementById('modalChapSelect').value === 'new' ? 'block' : 'none'; 
+    }
     
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
@@ -828,7 +851,48 @@
       }
     }
 
-    function showTrashView() { hideAllViews(); document.getElementById('trashView').style.display = 'block'; }
+    function showTrashView() { 
+      hideAllViews(); 
+      document.getElementById('trashView').style.display = 'block'; 
+      renderTrashView();
+    }
+
+    function renderTrashView() {
+      const trashList = document.getElementById('trashList');
+      const deletedCards = cardsData.filter(c => c.status === -1);
+      
+      if(deletedCards.length === 0) {
+        trashList.innerHTML = '<p style="color:#64748b;">La corbeille est vide.</p>';
+        return;
+      }
+      
+      trashList.innerHTML = deletedCards.map(c => `
+        <div class="manage-list-item">
+          <div style="flex:1; overflow:hidden;">
+            <strong>Q:</strong> <span style="font-size:0.9rem;">${c.question}</span><br>
+            <span style="font-size:0.8rem; color:#64748b;">Dossier: ${c.ue || 'Général'} > ${c.chapter}</span>
+          </div>
+          <div style="display:flex; gap:5px;">
+            <button class="action-icon" style="background:#22c55e; color:white; padding:6px 10px; border-radius:6px;" onclick="restoreCard('${c.id}')">♻️ Restaurer</button>
+            <button class="action-icon" style="background:#ef4444; color:white; padding:6px 10px; border-radius:6px;" onclick="hardDeleteCard('${c.id}')">❌ Supprimer</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function restoreCard(id) {
+      await dbClient.from('flashcards').update({ status: 0 }).eq('id', id);
+      await loadCards();
+      renderTrashView();
+    }
+
+    async function hardDeleteCard(id) {
+      if(confirm("Veux-tu vraiment supprimer cette carte définitivement ? Cette action est irréversible.")) {
+        await dbClient.from('flashcards').delete().eq('id', id);
+        await loadCards();
+        renderTrashView();
+      }
+    }
     
     initSupabase();
   </script>
